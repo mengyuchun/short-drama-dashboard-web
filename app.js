@@ -61,11 +61,14 @@ function cutByHours(points, hours) {
   }
 }
 
-function drawLineChart(svgId, points, color, metaLeftId, metaRightId, compareSpec = null) {
+function drawLineChart(svgId, points, color, metaLeftId, metaRightId, tooltipBuilderOrCompareSpec = null, compareSpecMaybe = null) {
+  const tooltipBuilder = typeof tooltipBuilderOrCompareSpec === 'function' ? tooltipBuilderOrCompareSpec : null;
+  const compareSpec = typeof tooltipBuilderOrCompareSpec === 'function' ? compareSpecMaybe : tooltipBuilderOrCompareSpec;
   const svg = document.getElementById(svgId);
   if (!svg) return;
 
   const shell = svg.parentElement;
+  const tooltip = shell ? shell.querySelector('.chart-tooltip') : null;
   const width = svg.clientWidth || 520;
   const height = svg.clientHeight || 220;
   const pad = 26;
@@ -127,7 +130,94 @@ function drawLineChart(svgId, points, color, metaLeftId, metaRightId, compareSpe
     `<line x1="${pad}" y1="${pad}" x2="${pad}" y2="${height - pad}" stroke="#dbe4f3"/>` +
     `<path d="${pathParts.join(' ')}" fill="none" stroke="${color}" stroke-width="2.2" />` +
     circles +
-    comparePath;
+    comparePath +
+    `<line class="hover-line" x1="0" y1="0" x2="0" y2="0" stroke="#94a6c6" stroke-dasharray="4 4" style="display:none;" />` +
+    `<circle class="hover-dot" cx="0" cy="0" r="4.5" fill="#fff" stroke="${color}" stroke-width="2" style="display:none;" />`;
+
+  const hoverLine = svg.querySelector('.hover-line');
+  const hoverDot = svg.querySelector('.hover-dot');
+  let pinnedIndex = null;
+
+  function buildTooltipContent(point) {
+    if (tooltipBuilder) return tooltipBuilder(point);
+    return {
+      title: `${point.x} · ${formatValue(point.y, 1)}`,
+      lines: [`数值：${formatValue(point.y, 1)}`],
+    };
+  }
+
+  function showPoint(index, pinned) {
+    const item = renderedPoints[index];
+    if (!item) return;
+    const content = buildTooltipContent(item.point) || {};
+    if (tooltip) {
+      const title = escapeHtml(String(content.title || ''));
+      const lines = Array.isArray(content.lines) ? content.lines : [];
+      tooltip.innerHTML = `<div class="title">${title}</div>${lines.map((line) => `<div class="line">${escapeHtml(String(line))}</div>`).join('')}`;
+      tooltip.classList.add('visible');
+      const shellRect = shell.getBoundingClientRect();
+      tooltip.style.left = `${(item.x / width) * shellRect.width}px`;
+      tooltip.style.top = `${(item.y / height) * shellRect.height}px`;
+    }
+
+    if (hoverLine) {
+      hoverLine.setAttribute('x1', item.x.toFixed(2));
+      hoverLine.setAttribute('y1', pad.toFixed(2));
+      hoverLine.setAttribute('x2', item.x.toFixed(2));
+      hoverLine.setAttribute('y2', (height - pad).toFixed(2));
+      hoverLine.style.display = 'block';
+    }
+    if (hoverDot) {
+      hoverDot.setAttribute('cx', item.x.toFixed(2));
+      hoverDot.setAttribute('cy', item.y.toFixed(2));
+      hoverDot.style.display = 'block';
+    }
+
+    if (pinned) pinnedIndex = index;
+  }
+
+  function hidePoint() {
+    if (tooltip) tooltip.classList.remove('visible');
+    if (hoverLine) hoverLine.style.display = 'none';
+    if (hoverDot) hoverDot.style.display = 'none';
+  }
+
+  function nearestIndex(clientX) {
+    if (renderedPoints.length === 0) return null;
+    if (renderedPoints.length === 1) return 0;
+    const rect = svg.getBoundingClientRect();
+    const usableWidth = rect.width - pad * 2;
+    const raw = (clientX - rect.left - pad) / usableWidth;
+    const clamped = Math.max(0, Math.min(1, raw));
+    return Math.round(clamped * (renderedPoints.length - 1));
+  }
+
+  svg.addEventListener('mousemove', (event) => {
+    const rect = svg.getBoundingClientRect();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) {
+      if (pinnedIndex === null) hidePoint();
+      return;
+    }
+    const index = nearestIndex(event.clientX);
+    if (index === null) return;
+    showPoint(index, false);
+  });
+
+  svg.addEventListener('mouseleave', () => {
+    if (pinnedIndex === null) hidePoint();
+    else showPoint(pinnedIndex, true);
+  });
+
+  svg.addEventListener('click', (event) => {
+    const index = nearestIndex(event.clientX);
+    if (index === null) return;
+    if (pinnedIndex === index) {
+      pinnedIndex = null;
+      hidePoint();
+      return;
+    }
+    showPoint(index, true);
+  });
 
   setText(metaLeftId, `${filtered[0].x} · ${filtered[0].y != null ? filtered[0].y.toFixed(1) : '-'}`);
   setText(metaRightId, `${filtered[filtered.length - 1].x} · ${filtered[filtered.length - 1].y != null ? filtered[filtered.length - 1].y.toFixed(1) : '-'}`);
@@ -154,13 +244,24 @@ function renderAllTrends(hours) {
       const comparePoints = buildTrendComparisonPoints(metricKey, points, selectedSeriesId);
       if (comparePoints.some((point) => toNum(point.y) !== null)) {
         compareSpec = {
-          label: '单剧对照',
+          label: `单剧《${resolveTrendSeriesTitle(selectedSeriesId)}》`,
           color: '#ff6b35',
           points: comparePoints,
         };
       }
     }
-    drawLineChart(`chart-${metricKey}`, points, spec.color, `meta-${metricKey}-left`, `meta-${metricKey}-right`, compareSpec);
+    drawLineChart(
+      `chart-${metricKey}`,
+      points,
+      spec.color,
+      `meta-${metricKey}-left`,
+      `meta-${metricKey}-right`,
+      (point) => ({
+        title: `${String(point.x)} · ${formatValue(point.y, 1)}`,
+        lines: [`总体${spec.label}：${formatValue(point.y, 1)}`],
+      }),
+      compareSpec,
+    );
   });
 }
 
@@ -223,8 +324,24 @@ function renderEpisodeCharts() {
   const likePoints = rows.map((row) => ({ x: `第${row.episode_no}集`, y: row.like_count }));
   const commentPoints = rows.map((row) => ({ x: `第${row.episode_no}集`, y: row.comment_count }));
 
-  drawLineChart('chart-episode-likes', likePoints, '#1364ff', 'meta-ep-likes-left', 'meta-ep-likes-right');
-  drawLineChart('chart-episode-comments', commentPoints, '#11a7b8', 'meta-ep-comments-left', 'meta-ep-comments-right');
+  drawLineChart('chart-episode-likes', likePoints, '#1364ff', 'meta-ep-likes-left', 'meta-ep-likes-right', (point) => ({
+    title: `${point.x} · ${point.vid}`,
+    lines: [
+      `剧名：${point.title}`,
+      `剧集ID：${point.series_id}`,
+      `点赞：${formatValue(point.y, 1)}`,
+      `观测小时：${point.snapshot_hour}`,
+    ],
+  }));
+  drawLineChart('chart-episode-comments', commentPoints, '#11a7b8', 'meta-ep-comments-left', 'meta-ep-comments-right', (point) => ({
+    title: `${point.x} · ${point.vid}`,
+    lines: [
+      `剧名：${point.title}`,
+      `剧集ID：${point.series_id}`,
+      `评论：${formatValue(point.y, 1)}`,
+      `观测小时：${point.snapshot_hour}`,
+    ],
+  }));
 }
 
 function renderRankTable() {
@@ -246,18 +363,22 @@ function renderRankTable() {
 function buildScopeCards() {
   const el = document.getElementById('scopeCards');
   if (!el || !state.rankBoardData) return;
-  const launchTags = (state.rankBoardData.launch_tags || []).slice(0, 3).join(' / ') || '-';
-  const startHour = state.rankBoardData.start_hour || '-';
-  const latestHour = state.rankBoardData.latest_hour || '-';
-  const seriesCount = Array.isArray(state.rankBoardData.series) ? state.rankBoardData.series.length : 0;
-  const rowsCount = Array.isArray(state.rankBoardData.rows) ? state.rankBoardData.rows.length : 0;
+  const hours = Array.isArray(state.rankBoardData.hours) ? state.rankBoardData.hours : [];
+  const series = Array.isArray(state.seriesTrendData?.series) ? state.seriesTrendData.series : [];
+  const launchTags = [...new Set(series.map((item) => String(item.launch_date_tag || '').trim()).filter(Boolean))].slice(0, 3);
+  const allLaunchTags = [...new Set(series.map((item) => String(item.launch_date_tag || '').trim()).filter(Boolean))];
+  const launchTagLabel = launchTags.length > 0 ? launchTags.join(' / ') + (allLaunchTags.length > 3 ? ' …' : '') : '-';
+  const startHour = hours[0] || '-';
+  const latestHour = hours[hours.length - 1] || '-';
+  const seriesCount = series.length;
+  const rowsCount = hours.length;
   el.innerHTML = `
     <div class="cards">
       <div class="card"><div class="label">统计起始（小时）</div><div class="value">${startHour}</div></div>
       <div class="card"><div class="label">最新观测（小时）</div><div class="value">${latestHour}</div></div>
       <div class="card"><div class="label">统计剧数</div><div class="value">${seriesCount}</div></div>
-      <div class="card"><div class="label">榜单行数</div><div class="value">${rowsCount}</div></div>
-      <div class="card"><div class="label">上线日期</div><div class="value">${launchTags}</div></div>
+      <div class="card"><div class="label">覆盖观测次数</div><div class="value">${rowsCount}</div></div>
+      <div class="card"><div class="label">上线日期</div><div class="value"><span title="${escapeHtml(launchTags.join(', '))}">${escapeHtml(launchTagLabel)}</span></div></div>
     </div>`;
 }
 
@@ -908,6 +1029,7 @@ function setupRankBoardFull() {
 
 async function init() {
   try {
+    document.title = '短剧观测交互看板 v2';
     setStatus('正在加载远端 JSON...', 'info');
     const [meta, trend, series, episode, rank] = await Promise.all([
       fetchJson('meta'),
@@ -923,19 +1045,16 @@ async function init() {
     state.rankBoardData = rank;
 
     setText('meta-latest', meta.latest_hour || '-');
-    setText('tinyDefs', '四指标：点赞 / 评论 / 热度 / 收藏');
+    setText('tinyDefs', '1. 点赞：按剧集+观测时间聚合为单集均赞（AVG like_count)\n2. 评论：按剧集+观测时间聚合为单集均评（AVG comment_count）\n3. 热度：按剧集+观测时间取剧级热度（popularity，同剧各集一致）\n4. 收藏：按剧集+观测时间取剧级收藏（collection_count，同剧各集一致）');
     setStatus(`已加载：${meta.generated_at || '-'} · ${meta.latest_hour || '-'}`, 'ok');
 
     rankIndex = buildRankIndex();
-    const metricData = buildMetricRanks();
 
     refreshTrendSeriesOptions();
     refreshSeriesOptions();
     renderAllTrends(0);
     renderEpisodeCharts();
     buildScopeCards();
-    buildMetricTabs(metricData);
-    buildMetricPanels(metricData);
     setupRankBoardFull();
     wireEvents();
 

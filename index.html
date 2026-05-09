@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>短剧数据看板（在线版）</title>
+  <title>短剧观测交互看板 v2</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <div class="wrap">
     <section class="hero">
-      <h1>短剧数据看板（在线版）</h1>
+      <h1>短剧观测交互看板 v2</h1>
       <div class="meta">
         最新观测小时：<strong id="meta-latest">-</strong> · 数据源：<span>GitHub Raw JSON</span>
       </div>
@@ -17,7 +17,7 @@
       <div style="margin-top:8px;"><button id="refreshDataBtn" type="button">刷新数据</button></div>
       <div id="scopeCards"></div>
       <div class="tiny-defs" id="tinyDefs"></div>
-      <div class="note">在线看板基于远端 JSON 数据渲染，页面手动刷新可查看最新数据。</div>
+      <div class="note">欢迎查看短剧新剧数据聚合看板。</div>
     </section>
 
     <section class="panel">
@@ -91,7 +91,7 @@
     </section>
 
     <section class="panel">
-      <h2>榜单对比（简版）</h2>
+      <h2>榜单对比</h2>
       <div class="rank-panel-head">
         <h3>时间区间对比榜单</h3>
         <p>支持两个时间点对比、指标列切换、二级排序、分页浏览与口径保护。当前维度会排在四个指标列的最前并高亮。</p>
@@ -161,18 +161,6 @@
           <button type="button" id="rankNextPage">下一页</button>
         </div>
       </div>
-    </section>
-
-    <section class="panel">
-      <h2>四指标榜单</h2>
-      <div class="toolbar">
-        <div class="left">
-          <label for="rankFilter">过滤</label>
-          <input id="rankFilter" type="search" placeholder="剧名或剧集ID" />
-        </div>
-      </div>
-      <div class="metric-tabs" id="metricTabs"></div>
-      <div id="metricPanels"></div>
     </section>
 
     <section class="panel">
