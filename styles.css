@@ -12,6 +12,26 @@ body {
 .status.error { background: #fff0f0; color: #9f1f1f; }
 .panel { margin-top: 16px; background: #fff; border: 1px solid #e6eef9; border-radius: 12px; padding: 12px; }
 .toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 0; }
+.rank-toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; flex-wrap:wrap; }
+.rank-toolbar .left, .rank-toolbar .mid, .rank-toolbar .right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.rank-panel-head h3 { margin: 0; font-size: 18px; }
+.rank-panel-head p { margin: 4px 0 0; color: #6b7a93; font-size: 13px; line-height: 1.6; }
+.rank-summary { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap:10px; margin-top: 10px; }
+.pager { display:flex; justify-content:space-between; align-items:center; gap:10px; padding-top: 10px; flex-wrap: wrap; }
+.pager .meta { color: #6b7a93; font-size: 12px; }
+.rank-preset button, .rank-metric button, .pager button { border: 1px solid #dce6f3; background: #f8fbff; color: #1b2b45; border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+.rank-preset button.active, .rank-metric button.active { background: linear-gradient(135deg, #1364ff, #11a7b8); color: #fff; border-color: transparent; }
+.metric-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 10px; }
+.metric-tab { border: 1px solid #dce6f3; background: #f8fbff; color: #1b2b45; border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+.metric-tab.active { background: linear-gradient(135deg, #1364ff, #11a7b8); color: #fff; border-color: transparent; }
+.metric-panel { display:none; margin-top: 12px; background: #fff; border: 1px solid #edf1f9; border-radius: 12px; overflow: hidden; }
+.metric-panel.active { display:block; }
+.metric-head { padding: 12px 16px; border-bottom: 1px solid #edf1f9; }
+.metric-head h3 { margin: 0; font-size: 16px; }
+.metric-head p { margin: 4px 0 0; color: #6b7a93; font-size: 13px; line-height: 1.6; }
+.mini-panel { margin: 0; border: 0; border-radius: 0; box-shadow: none; }
+.mini-panel h3 { font-size: 14px; border-bottom: 1px solid #edf1f9; padding: 10px 16px; }
+.empty { text-align: center; color: #6b7a93; padding: 22px; }
 .trend-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; }
 .chart { width:100%; height:220px; background:#fff; border:1px solid #edf1f9; border-radius:10px; }
 .rank-table { width:100%; border-collapse: collapse; }

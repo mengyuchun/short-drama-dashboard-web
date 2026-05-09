@@ -91,6 +91,60 @@
 
     <section class="panel">
       <h2>榜单对比（简版）</h2>
+      <div class="rank-panel-head">
+        <h3>时间区间对比榜单</h3>
+        <p>支持两个时间点对比、指标列切换、二级排序、分页浏览与口径保护。当前维度会排在四个指标列的最前并高亮。</p>
+      </div>
+      <div class="rank-toolbar">
+        <div class="left rank-preset" id="rankPresetButtons">
+          <span class="stat-pill">对比窗口</span>
+          <button type="button" data-preset="24h">近 24h</button>
+          <button type="button" data-preset="72h">近 72h</button>
+          <button type="button" data-preset="7d">近 7d</button>
+          <button type="button" data-preset="custom">自定义</button>
+        </div>
+        <div class="mid rank-mode">
+          <label for="rankStartHour">起始时间</label>
+          <select id="rankStartHour"></select>
+          <label for="rankEndHour">结束时间</label>
+          <select id="rankEndHour"></select>
+        </div>
+        <div class="right">
+          <label for="rankSearch">搜索</label>
+          <input id="rankSearch" type="search" placeholder="剧名或剧集ID" />
+          <label for="rankStatus">过滤</label>
+          <select id="rankStatus">
+            <option value="all">全部状态</option>
+            <option value="normal">仅正常</option>
+            <option value="missing">仅缺失</option>
+          </select>
+        </div>
+      </div>
+      <div class="rank-summary">
+        <div class="card"><div class="label">默认起始</div><div class="value" id="rankSummaryStart">-</div></div>
+        <div class="card"><div class="label">默认结束</div><div class="value" id="rankSummaryEnd">-</div></div>
+        <div class="card"><div class="label">当前维度</div><div class="value" id="rankSummaryMetric">点赞</div></div>
+        <div class="card"><div class="label">当前页结果</div><div class="value" id="rankSummaryCount">-</div></div>
+      </div>
+      <div class="rank-toolbar" style="border-top: 0;">
+        <div class="left rank-metric" id="rankMetricButtons"></div>
+        <div class="right">
+          <label for="rankSortField">排序字段</label>
+          <select id="rankSortField">
+            <option value="delta">差值</option>
+            <option value="growth">增幅</option>
+            <option value="endValue">结束值</option>
+            <option value="startValue">起始值</option>
+            <option value="title">剧目名</option>
+          </select>
+          <label for="rankPageSize">每页</label>
+          <select id="rankPageSize">
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
       <div class="rank-board-shell">
         <div class="rank-table-wrap">
           <table class="rank-table">
@@ -99,6 +153,25 @@
           </table>
         </div>
       </div>
+      <div class="pager">
+        <div class="meta" id="rankPageMeta">-</div>
+        <div class="right">
+          <button type="button" id="rankPrevPage">上一页</button>
+          <button type="button" id="rankNextPage">下一页</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>四指标榜单</h2>
+      <div class="toolbar">
+        <div class="left">
+          <label for="rankFilter">过滤</label>
+          <input id="rankFilter" type="search" placeholder="剧名或剧集ID" />
+        </div>
+      </div>
+      <div class="metric-tabs" id="metricTabs"></div>
+      <div id="metricPanels"></div>
     </section>
 
     <section class="panel">
