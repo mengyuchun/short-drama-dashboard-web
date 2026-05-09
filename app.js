@@ -950,4 +950,21 @@ async function init() {
   }
 }
 
+// 对外暴露一个刷新入口，页面上的按钮或调试时可以调用
+window.refreshData = async function() {
+  try {
+    setStatus('手动刷新：正在加载远端 JSON...', 'info');
+    await init();
+    setStatus('手动刷新完成', 'ok');
+  } catch (err) {
+    setStatus('手动刷新失败', 'error');
+    console.error('refreshData error', err);
+  }
+}
+
 init();
+
+// 绑定刷新按钮（如果存在）
+document.getElementById('refreshDataBtn')?.addEventListener('click', () => {
+  window.refreshData();
+});
