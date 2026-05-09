@@ -1,36 +1,173 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>短剧数据看板（轻量版）</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>短剧观测交互看板 v2</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <main class="wrap">
-    <h1>短剧数据看板（轻量版）</h1>
-    <p class="muted">数据源：GitHub Raw JSON</p>
-
-    <section class="card">
-      <div>最近生成时间：<strong id="generatedAt">加载中...</strong></div>
-      <div>最新观测小时：<strong id="latestHour">加载中...</strong></div>
+  <div class="wrap">
+    <section class="hero">
+      <h1>短剧观测交互看板 v2</h1>
+      <div class="meta">
+        最新观测小时：<strong id="meta-latest">-</strong> · 数据源：<span>GitHub Raw JSON</span>
+      </div>
+      <div class="status" id="statusLine">正在加载远端数据...</div>
+      <div style="margin-top:8px;"><button id="refreshDataBtn" type="button">刷新数据</button></div>
+      <div id="scopeCards"></div>
+      <div class="tiny-defs" id="tinyDefs"></div>
+      <div class="note">欢迎查看短剧新剧数据聚合看板。</div>
     </section>
 
-    <section class="card">
-      <h2>数据量概览</h2>
-      <ul>
-        <li>趋势指标数：<span id="trendCount">-</span></li>
-        <li>单剧趋势剧数：<span id="seriesCount">-</span></li>
-        <li>分集记录数：<span id="episodeRows">-</span></li>
-        <li>榜单行数：<span id="rankRows">-</span></li>
-      </ul>
+    <section class="panel">
+      <h2>四指标趋势（横轴：观测时间）</h2>
+      <div class="toolbar">
+        <div class="left" id="rangeButtons">
+          <button data-range="24" type="button">24h</button>
+          <button data-range="72" type="button">72h</button>
+          <button data-range="168" type="button">7d</button>
+          <button data-range="0" type="button" class="active">全部</button>
+        </div>
+        <div class="right trend-compare">
+          <label for="trendSeriesSearch">单剧对照</label>
+          <input id="trendSeriesSearch" type="search" placeholder="搜索剧名或剧集ID" />
+          <select id="trendSeriesSelect"></select>
+        </div>
+      </div>
+      <div class="trend-grid">
+        <div class="trend-card">
+          <div class="trend-title">点赞趋势</div>
+          <div class="chart-shell"><svg id="chart-likes" class="chart"></svg><div class="chart-tooltip"></div></div>
+          <div class="chart-meta"><span id="meta-likes-left"></span><span id="meta-likes-right"></span></div>
+        </div>
+        <div class="trend-card">
+          <div class="trend-title">评论趋势</div>
+          <div class="chart-shell"><svg id="chart-comments" class="chart"></svg><div class="chart-tooltip"></div></div>
+          <div class="chart-meta"><span id="meta-comments-left"></span><span id="meta-comments-right"></span></div>
+        </div>
+        <div class="trend-card">
+          <div class="trend-title">热度趋势</div>
+          <div class="chart-shell"><svg id="chart-heat" class="chart"></svg><div class="chart-tooltip"></div></div>
+          <div class="chart-meta"><span id="meta-heat-left"></span><span id="meta-heat-right"></span></div>
+        </div>
+        <div class="trend-card">
+          <div class="trend-title">收藏趋势</div>
+          <div class="chart-shell"><svg id="chart-favorites" class="chart"></svg><div class="chart-tooltip"></div></div>
+          <div class="chart-meta"><span id="meta-favorites-left"></span><span id="meta-favorites-right"></span></div>
+        </div>
+      </div>
     </section>
 
-    <section class="card">
+    <section class="panel">
+      <h2>单剧分集曲线（点赞 / 评论）</h2>
+      <div class="toolbar">
+        <div class="left">
+          <label for="seriesSearch">剧名搜索</label>
+          <input id="seriesSearch" type="search" placeholder="输入关键字筛选剧名" />
+          <select id="seriesSelect"></select>
+        </div>
+        <div class="mid episode-stats">
+          <span class="stat-pill">收藏<strong id="episode-stat-collection">-</strong></span>
+          <span class="stat-pill">热度<strong id="episode-stat-heat">-</strong></span>
+        </div>
+        <div class="right">
+          <label for="hourSelect">观测小时</label>
+          <select id="hourSelect"></select>
+        </div>
+      </div>
+      <div class="episode-grid">
+        <div class="episode-card">
+          <div class="trend-title">分集点赞曲线</div>
+          <div class="chart-shell"><svg id="chart-episode-likes" class="chart"></svg><div class="chart-tooltip"></div></div>
+          <div class="chart-meta"><span id="meta-ep-likes-left"></span><span id="meta-ep-likes-right"></span></div>
+        </div>
+        <div class="episode-card">
+          <div class="trend-title">分集评论曲线</div>
+          <div class="chart-shell"><svg id="chart-episode-comments" class="chart"></svg><div class="chart-tooltip"></div></div>
+          <div class="chart-meta"><span id="meta-ep-comments-left"></span><span id="meta-ep-comments-right"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>榜单对比</h2>
+      <div class="rank-panel-head">
+        <h3>时间区间对比榜单</h3>
+        <p>支持两个时间点对比、指标列切换、二级排序、分页浏览与口径保护。当前维度会排在四个指标列的最前并高亮。</p>
+      </div>
+      <div class="rank-toolbar">
+        <div class="left rank-preset" id="rankPresetButtons">
+          <span class="stat-pill">对比窗口</span>
+          <button type="button" data-preset="24h">近 24h</button>
+          <button type="button" data-preset="72h">近 72h</button>
+          <button type="button" data-preset="7d">近 7d</button>
+          <button type="button" data-preset="custom">自定义</button>
+        </div>
+        <div class="mid rank-mode">
+          <label for="rankStartHour">起始时间</label>
+          <select id="rankStartHour"></select>
+          <label for="rankEndHour">结束时间</label>
+          <select id="rankEndHour"></select>
+        </div>
+        <div class="right">
+          <label for="rankSearch">搜索</label>
+          <input id="rankSearch" type="search" placeholder="剧名或剧集ID" />
+          <label for="rankStatus">过滤</label>
+          <select id="rankStatus">
+            <option value="all">全部状态</option>
+            <option value="normal">仅正常</option>
+            <option value="missing">仅缺失</option>
+          </select>
+        </div>
+      </div>
+      <div class="rank-summary">
+        <div class="card"><div class="label">默认起始</div><div class="value" id="rankSummaryStart">-</div></div>
+        <div class="card"><div class="label">默认结束</div><div class="value" id="rankSummaryEnd">-</div></div>
+        <div class="card"><div class="label">当前维度</div><div class="value" id="rankSummaryMetric">点赞</div></div>
+        <div class="card"><div class="label">当前页结果</div><div class="value" id="rankSummaryCount">-</div></div>
+      </div>
+      <div class="rank-toolbar" style="border-top: 0;">
+        <div class="left rank-metric" id="rankMetricButtons"></div>
+        <div class="right">
+          <label for="rankSortField">排序字段</label>
+          <select id="rankSortField">
+            <option value="delta">差值</option>
+            <option value="growth">增幅</option>
+            <option value="endValue">结束值</option>
+            <option value="startValue">起始值</option>
+            <option value="title">剧目名</option>
+          </select>
+          <label for="rankPageSize">每页</label>
+          <select id="rankPageSize">
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+      <div class="rank-board-shell">
+        <div class="rank-table-wrap">
+          <table class="rank-table">
+            <thead id="rankTableHead"></thead>
+            <tbody id="rankTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="pager">
+        <div class="meta" id="rankPageMeta">-</div>
+        <div class="right">
+          <button type="button" id="rankPrevPage">上一页</button>
+          <button type="button" id="rankNextPage">下一页</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>调试输出</h2>
       <pre id="debug"></pre>
     </section>
-  </main>
+  </div>
 
   <script src="./app.js"></script>
 </body>
