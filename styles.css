@@ -7,10 +7,16 @@ body {
 .wrap { max-width: 1200px; margin: 0 auto; padding: 22px 16px 52px; }
 .hero { background: #fff; border: 1px solid #e6eef9; border-radius: 14px; padding: 16px; }
 .meta { color: #6b7a93; margin-top: 6px; }
+.status { margin-top: 10px; font-size: 13px; padding: 8px 10px; border-radius: 10px; background: #eef4ff; color: #24426d; }
+.status.ok { background: #e9f7ef; color: #11633a; }
+.status.error { background: #fff0f0; color: #9f1f1f; }
 .panel { margin-top: 16px; background: #fff; border: 1px solid #e6eef9; border-radius: 12px; padding: 12px; }
 .toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 0; }
 .trend-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; }
 .chart { width:100%; height:220px; background:#fff; border:1px solid #edf1f9; border-radius:10px; }
+.rank-table { width:100%; border-collapse: collapse; }
+.rank-table th, .rank-table td { padding: 8px 10px; border-bottom: 1px solid #edf1f9; font-size: 13px; text-align: left; }
+.rank-table thead th { color: #6b7a93; background: #fbfdff; }
 .card { background:#fff; border:1px solid #edf1f9; border-radius:10px; padding:12px; }
 pre { white-space: pre-wrap; word-break: break-word; font-size:12px; }
 

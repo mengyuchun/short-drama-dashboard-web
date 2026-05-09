@@ -10,10 +10,13 @@
   <div class="wrap">
     <section class="hero">
       <h1>短剧数据看板（在线版）</h1>
-      <div class="meta">最新观测小时：<strong id="meta-latest">-</strong> · 数据源：<span>GitHub Raw JSON</span></div>
+      <div class="meta">
+        最新观测小时：<strong id="meta-latest">-</strong> · 数据源：<span>GitHub Raw JSON</span>
+      </div>
+      <div class="status" id="statusLine">正在加载远端数据...</div>
       <div id="scopeCards"></div>
       <div class="tiny-defs" id="tinyDefs"></div>
-      <div class="note">在线看板基于远端 JSON 数据渲染，页面刷新可查看最新数据。</div>
+      <div class="note">在线看板基于远端 JSON 数据渲染，页面手动刷新可查看最新数据。</div>
     </section>
 
     <section class="panel">
@@ -103,43 +106,6 @@
       <pre id="debug"></pre>
     </section>
   </div>
-
-  <script src="./app.js"></script>
-</body>
-</html>
-<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>短剧数据看板（轻量版）</title>
-  <link rel="stylesheet" href="./styles.css" />
-</head>
-<body>
-  <main class="wrap">
-    <h1>短剧数据看板（轻量版）</h1>
-    <p class="muted">数据源：GitHub Raw JSON</p>
-
-    <section class="card">
-      <div>最近生成时间：<strong id="generatedAt">加载中...</strong></div>
-      <div>最新观测小时：<strong id="latestHour">加载中...</strong></div>
-    </section>
-
-    <section class="card">
-      <h2>数据量概览</h2>
-      <ul>
-        <li>趋势指标数：<span id="trendCount">-</span></li>
-        <li>单剧趋势剧数：<span id="seriesCount">-</span></li>
-        <li>分集记录数：<span id="episodeRows">-</span></li>
-        <li>榜单行数：<span id="rankRows">-</span></li>
-      </ul>
-    </section>
-
-    <section class="card">
-      <h2>调试输出</h2>
-      <pre id="debug"></pre>
-    </section>
-  </main>
 
   <script src="./app.js"></script>
 </body>
