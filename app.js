@@ -516,10 +516,90 @@ const rankState = {
   page: 1,
   pageSize: 20,
 };
-              lifetime_delta: lifetimeRows.slice().sort((a, b) => (Number.isFinite(b.delta) ? b.delta : -Infinity) - (Number.isFinite(a.delta) ? a.delta : -Infinity)).slice(0, 10),
-              lifetime_growth: lifetimeRows.slice().sort((a, b) => (Number.isFinite(b.growth_pct) ? b.growth_pct : -Infinity) - (Number.isFinite(a.growth_pct) ? a.growth_pct : -Infinity)).slice(0, 10),
-              recent_delta: recentRows.length ? recentRows.slice().sort((a, b) => (Number.isFinite(b.delta) ? b.delta : -Infinity) - (Number.isFinite(a.delta) ? a.delta : -Infinity)).slice(0, 5) : null,
-              recent_growth: recentRows.length ? recentRows.slice().sort((a, b) => (Number.isFinite(b.growth_pct) ? b.growth_pct : -Infinity) - (Number.isFinite(a.growth_pct) ? a.growth_pct : -Infinity)).slice(0, 5) : null,
+
+function buildMetricRanks() {
+  const result = {};
+  const rankRows = Array.isArray(state.rankBoardData?.rows) ? state.rankBoardData.rows : [];
+  const hours = Array.isArray(state.rankBoardData?.hours) ? state.rankBoardData.hours.slice() : [];
+  const seriesMeta = {};
+
+  rankRows.forEach((row) => {
+    const sid = String(row.series_id);
+    if (!seriesMeta[sid]) {
+      seriesMeta[sid] = {
+        series_id: sid,
+        title: row.title || sid,
+        launch_date_tag: row.launch_date_tag || '',
+        first_discovery_at: row.first_discovery_at || '',
+      };
+    }
+  });
+
+  metricConfigs.forEach((cfg) => {
+    const metricMap = state.seriesTrendData?.metrics?.[cfg.key] || {};
+    const currentRows = [];
+    const lifetimeRows = [];
+    const recentRows = [];
+
+    Object.keys(metricMap).forEach((seriesId) => {
+      const points = (metricMap[seriesId] || []).slice().sort((a, b) => String(a.x).localeCompare(String(b.x)));
+      const meta = seriesMeta[seriesId] || { series_id: seriesId, title: seriesId, launch_date_tag: '', first_discovery_at: '' };
+      if (points.length === 0) return;
+
+      const firstPoint = points[0];
+      const lastPoint = points[points.length - 1];
+      const prevPoint = points.length >= 2 ? points[points.length - 2] : null;
+
+      currentRows.push({
+        series_id: seriesId,
+        title: meta.title,
+        launch_date_tag: meta.launch_date_tag,
+        first_discovery_at: meta.first_discovery_at,
+        [cfg.series_col]: lastPoint.y,
+      });
+
+      const lifetimeDelta = toNum(lastPoint.y) !== null && toNum(firstPoint.y) !== null ? lastPoint.y - firstPoint.y : null;
+      const lifetimeGrowth = lifetimeDelta !== null && toNum(firstPoint.y) !== null && Number(firstPoint.y) !== 0 ? (lifetimeDelta / firstPoint.y) * 100 : null;
+      lifetimeRows.push({
+        series_id: seriesId,
+        title: meta.title,
+        launch_date_tag: meta.launch_date_tag,
+        first_discovery_at: meta.first_discovery_at,
+        metric_before: firstPoint.y,
+        metric_after: lastPoint.y,
+        delta: lifetimeDelta,
+        growth_pct: lifetimeGrowth,
+      });
+
+      if (prevPoint) {
+        const recentDelta = toNum(lastPoint.y) !== null && toNum(prevPoint.y) !== null ? lastPoint.y - prevPoint.y : null;
+        const recentGrowth = recentDelta !== null && toNum(prevPoint.y) !== null && Number(prevPoint.y) !== 0 ? (recentDelta / prevPoint.y) * 100 : null;
+        recentRows.push({
+          series_id: seriesId,
+          title: meta.title,
+          launch_date_tag: meta.launch_date_tag,
+          first_discovery_at: meta.first_discovery_at,
+          metric_before: prevPoint.y,
+          metric_after: lastPoint.y,
+          delta: recentDelta,
+          growth_pct: recentGrowth,
+        });
+      }
+    });
+
+    result[cfg.key] = {
+      latest_hour: hours[hours.length - 1] || '-',
+      prev_hour: hours.length >= 2 ? hours[hours.length - 2] : null,
+      current_df: currentRows.sort((a, b) => (Number.isFinite(b[cfg.series_col]) ? b[cfg.series_col] : -Infinity) - (Number.isFinite(a[cfg.series_col]) ? a[cfg.series_col] : -Infinity)),
+      lifetime_delta: lifetimeRows.slice().sort((a, b) => (Number.isFinite(b.delta) ? b.delta : -Infinity) - (Number.isFinite(a.delta) ? a.delta : -Infinity)).slice(0, 10),
+      lifetime_growth: lifetimeRows.slice().sort((a, b) => (Number.isFinite(b.growth_pct) ? b.growth_pct : -Infinity) - (Number.isFinite(a.growth_pct) ? a.growth_pct : -Infinity)).slice(0, 10),
+      recent_delta: recentRows.length ? recentRows.slice().sort((a, b) => (Number.isFinite(b.delta) ? b.delta : -Infinity) - (Number.isFinite(a.delta) ? a.delta : -Infinity)).slice(0, 5) : null,
+      recent_growth: recentRows.length ? recentRows.slice().sort((a, b) => (Number.isFinite(b.growth_pct) ? b.growth_pct : -Infinity) - (Number.isFinite(a.growth_pct) ? a.growth_pct : -Infinity)).slice(0, 5) : null,
+    };
+  });
+
+  return result;
+}
 
 function getRankHours() {
   return Array.isArray(state.rankBoardData?.hours) ? state.rankBoardData.hours.slice() : [];
